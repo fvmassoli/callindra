@@ -3,8 +3,9 @@ import torch
 
 
 class ModelManager(object):
-    def __init__(self, verbose=0):
+    def __init__(self, gpu=False, verbose=0):
         self._models = {}
+        self._device = 'cuda' if gpu and torch.cuda.is_available() else 'cpu'
         self._verbose = verbose
 
     def load_model(self, model, path, k, load_state_dict=True):
@@ -25,6 +26,7 @@ class ModelManager(object):
             model.load_state_dict(state_dict, map_location='cpu')
         else:
             model = torch.load(path)
+        model.to(self._device)
         model_name = model.__class__.__name__
         self._models[model_name] = model
         self._print_model_info(model_name, model)
@@ -44,6 +46,15 @@ class ModelManager(object):
         """
         assert k in self._models, "Key Not found. Available models are: {}".format(self._models.keys())
         return self._models[k]
+
+    def move_model_to_device(self, k, device):
+        """Move the model k to the specified device
+
+        :param k: model name
+        :param device: device on which to move the model
+
+        """
+        self._models[k].to(device)
 
     def _print_model_info(self, model_name, model):
         """ Prints info about loaded model
